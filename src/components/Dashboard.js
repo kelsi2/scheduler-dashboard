@@ -7,6 +7,7 @@ import {
   getMostPopularDay,
   getInterviewsPerDay
 } from "helpers/selectors";
+import {setInterview} from "helpers/reducers";
 
 import classnames from "classnames";
 import axios from "axios";
@@ -62,6 +63,19 @@ class Dashboard extends Component {
         appointments: appointments.data,
         interviewers: interviewers.data
       });
+      this.socket = new WebSocket(process.env.REACT_APP_WEBSOCKET_URL);
+      // this.socket.onopen = function(event) {
+      //   this.socket.send("Ping Ping");
+      // };
+      this.socket.onmessage = event => {
+        const data = JSON.parse(event.data);
+
+        if (typeof data === "object" && data.type === "SET_INTERVIEW") {
+          this.setState(previousState =>
+            setInterview(previousState, data.id, data.interview)
+          );
+        }
+      };
     });
   }
 
@@ -69,6 +83,10 @@ class Dashboard extends Component {
     if (previousState.focused !== this.state.focused) {
       localStorage.setItem("focused", JSON.stringify(this.state.focused));
     }
+  }
+
+  componentWillUnmount() {
+    this.socket.close();
   }
 
   selectPanel(id) {
